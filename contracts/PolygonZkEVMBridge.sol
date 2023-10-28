@@ -68,6 +68,11 @@ contract PolygonZkEVMBridge is
     // PolygonZkEVM address
     address public polygonZkEVMaddress;
 
+    address public admin;
+    uint256 public bridgeFee;
+    address public feeAddress;
+    address public gasTokenAddress;
+    bytes public gasTokenMetadata;
     /**
      * @param _networkID networkID
      * @param _globalExitRootManager global exit root manager address
@@ -78,12 +83,21 @@ contract PolygonZkEVMBridge is
     function initialize(
         uint32 _networkID,
         IBasePolygonZkEVMGlobalExitRoot _globalExitRootManager,
-        address _polygonZkEVMaddress
+        address _polygonZkEVMaddress,
+        address _admin,
+        uint256  _bridgeFee,
+        address _feeAddress,
+        address _gasTokenAddress,
+        bytes memory _gasTokenMetadata
     ) external virtual initializer {
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonZkEVMaddress = _polygonZkEVMaddress;
-
+        admin =  _admin;
+        bridgeFee = _bridgeFee;
+        feeAddress = _feeAddress;
+        gasTokenAddress = _gasTokenAddress;
+        gasTokenMetadata = _gasTokenMetadata;
         // Initialize OZ contracts
         __ReentrancyGuard_init();
     }
@@ -91,6 +105,15 @@ contract PolygonZkEVMBridge is
     modifier onlyPolygonZkEVM() {
         if (polygonZkEVMaddress != msg.sender) {
             revert OnlyPolygonZkEVM();
+        }
+        _;
+    }
+
+    error OnlyAdmin();
+
+    modifier onlyAdmin() {
+        if (admin != msg.sender) {
+            revert OnlyAdmin();
         }
         _;
     }
@@ -161,7 +184,7 @@ contract PolygonZkEVMBridge is
 
         if (token == address(0)) {
             // Ether transfer
-            if (msg.value != amount) {
+            if ((msg.value - bridgeFee) != amount) {
                 revert AmountDoesNotMatchMsgValue();
             }
 
@@ -169,7 +192,7 @@ contract PolygonZkEVMBridge is
             originNetwork = _MAINNET_NETWORK_ID;
         } else {
             // Check msg.value is 0 if tokens are bridged
-            if (msg.value != 0) {
+            if (msg.value != bridgeFee) {
                 revert MsgValueNotZero();
             }
 
@@ -184,11 +207,6 @@ contract PolygonZkEVMBridge is
                 originTokenAddress = tokenInfo.originTokenAddress;
                 originNetwork = tokenInfo.originNetwork;
             } else {
-                // Use permit if any
-                if (permitData.length != 0) {
-                    _permit(token, amount, permitData);
-                }
-
                 // In order to support fee tokens check the amount received, not the transferred
                 uint256 balanceBefore = IERC20Upgradeable(token).balanceOf(
                     address(this)
@@ -217,6 +235,15 @@ contract PolygonZkEVMBridge is
             }
         }
 
+        if (gasTokenAddress != address (0)) {
+            if (token == address(0)) {
+                originTokenAddress = gasTokenAddress;
+                metadata = gasTokenMetadata;
+            } else if (originTokenAddress == gasTokenAddress) {
+                originTokenAddress = address(0);
+            }
+        }
+
         emit BridgeEvent(
             _LEAF_TYPE_ASSET,
             originNetwork,
@@ -239,6 +266,13 @@ contract PolygonZkEVMBridge is
                 keccak256(metadata)
             )
         );
+
+        if (feeAddress != address(0) && bridgeFee > 0) {
+            (bool success, ) = feeAddress.call{value: bridgeFee}(new bytes(0));
+            if (!success) {
+                revert EtherTransferFailed();
+            }
+        }
 
         // Update the new root to the global exit root manager if set by the user
         if (forceUpdateGlobalExitRoot) {
@@ -671,122 +705,6 @@ contract PolygonZkEVMBridge is
         bitPos = uint8(index);
     }
 
-    /**
-     * @notice Function to call token permit method of extended ERC20
-     + @param token ERC20 token address
-     * @param amount Quantity that is expected to be allowed
-     * @param permitData Raw data of the call `permit` of the token
-     */
-    function _permit(
-        address token,
-        uint256 amount,
-        bytes calldata permitData
-    ) internal {
-        bytes4 sig = bytes4(permitData[:4]);
-        if (sig == _PERMIT_SIGNATURE) {
-            (
-                address owner,
-                address spender,
-                uint256 value,
-                uint256 deadline,
-                uint8 v,
-                bytes32 r,
-                bytes32 s
-            ) = abi.decode(
-                    permitData[4:],
-                    (
-                        address,
-                        address,
-                        uint256,
-                        uint256,
-                        uint8,
-                        bytes32,
-                        bytes32
-                    )
-                );
-            if (owner != msg.sender) {
-                revert NotValidOwner();
-            }
-            if (spender != address(this)) {
-                revert NotValidSpender();
-            }
-
-            if (value != amount) {
-                revert NotValidAmount();
-            }
-
-            // we call without checking the result, in case it fails and he doesn't have enough balance
-            // the following transferFrom should be fail. This prevents DoS attacks from using a signature
-            // before the smartcontract call
-            /* solhint-disable avoid-low-level-calls */
-            address(token).call(
-                abi.encodeWithSelector(
-                    _PERMIT_SIGNATURE,
-                    owner,
-                    spender,
-                    value,
-                    deadline,
-                    v,
-                    r,
-                    s
-                )
-            );
-        } else {
-            if (sig != _PERMIT_SIGNATURE_DAI) {
-                revert NotValidSignature();
-            }
-
-            (
-                address holder,
-                address spender,
-                uint256 nonce,
-                uint256 expiry,
-                bool allowed,
-                uint8 v,
-                bytes32 r,
-                bytes32 s
-            ) = abi.decode(
-                    permitData[4:],
-                    (
-                        address,
-                        address,
-                        uint256,
-                        uint256,
-                        bool,
-                        uint8,
-                        bytes32,
-                        bytes32
-                    )
-                );
-
-            if (holder != msg.sender) {
-                revert NotValidOwner();
-            }
-
-            if (spender != address(this)) {
-                revert NotValidSpender();
-            }
-
-            // we call without checking the result, in case it fails and he doesn't have enough balance
-            // the following transferFrom should be fail. This prevents DoS attacks from using a signature
-            // before the smartcontract call
-            /* solhint-disable avoid-low-level-calls */
-            address(token).call(
-                abi.encodeWithSelector(
-                    _PERMIT_SIGNATURE_DAI,
-                    holder,
-                    spender,
-                    nonce,
-                    expiry,
-                    allowed,
-                    v,
-                    r,
-                    s
-                )
-            );
-        }
-    }
-
     // Helpers to safely get the metadata from a token, inspired by https://github.com/traderjoe-xyz/joe-core/blob/main/contracts/MasterChefJoeV3.sol#L55-L95
 
     /**
@@ -852,6 +770,15 @@ contract PolygonZkEVMBridge is
             return string(bytesArray);
         } else {
             return "NOT_VALID_ENCODING";
+        }
+    }
+
+    function setBridgeSettingsFee(address _feeAddress, uint256 _bridgeFee) external onlyAdmin {
+        if (_feeAddress != address(0)) {
+            feeAddress = _feeAddress;
+        }
+        if (_bridgeFee > 0) {
+            bridgeFee = _bridgeFee;
         }
     }
 }
