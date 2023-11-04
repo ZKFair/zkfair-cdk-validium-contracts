@@ -88,9 +88,11 @@ async function main() {
 
     // Load provider
     let currentProvider = ethers.provider;
+    currentProvider = new ethers.providers.FallbackProvider([ethers.provider], 1);
+
     if (deployParameters.multiplierGas || deployParameters.maxFeePerGas) {
         if (process.env.HARDHAT_NETWORK !== 'hardhat') {
-            currentProvider = new ethers.providers.JsonRpcProvider(`https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`);
+            // currentProvider = new ethers.providers.JsonRpcProvider(`https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`);
             if (deployParameters.maxPriorityFeePerGas && deployParameters.maxFeePerGas) {
                 console.log(`Hardcoded gas used: MaxPriority${deployParameters.maxPriorityFeePerGas} gwei, MaxFee${deployParameters.maxFeePerGas} gwei`);
                 const FEE_DATA = {
@@ -245,12 +247,18 @@ async function main() {
         precalculateCDKValidiumAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyCDKValidium });
     }
 
+    const gasTokenMetadata = ethers.utils.defaultAbiCoder.encode(['string', 'string', 'uint8'], ['USDC', 'USDC', 18]);
     const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
             networkIDMainnet,
             precalculateGLobalExitRootAddress,
             precalculateCDKValidiumAddress,
+            process.env.BRIDGE_ADMIN_ADDR,
+            ethers.utils.parseEther(process.env.BRIDGE_FEE_ETHER),
+            process.env.BRIDGE_FEE_RECIPIENT,
+            process.env.GASTOKEN_ADDR,
+            gasTokenMetadata,
         ],
     );
     const [proxyBridgeAddress, isBridgeProxyDeployed] = await create2Deployment(
@@ -544,7 +552,9 @@ async function main() {
         );
 
         // Transfer ownership of the proxyAdmin to timelock
-        await upgrades.admin.transferProxyAdminOwnership(timelockContract.address);
+
+        // await upgrades.admin.transferProxyAdminOwnership(timelockContract.address);
+        await (await upgrades.admin.getInstance()).connect(deployer).transferOwnership(timelockContract.address);
     }
 
     if (committeeTimelock) {
