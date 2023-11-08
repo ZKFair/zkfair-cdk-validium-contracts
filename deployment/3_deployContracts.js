@@ -247,7 +247,7 @@ async function main() {
         precalculateCDKValidiumAddress = ethers.utils.getContractAddress({ from: deployer.address, nonce: nonceProxyCDKValidium });
     }
 
-    const gasTokenMetadata = ethers.utils.defaultAbiCoder.encode(['string', 'string', 'uint8'], ['USDC', 'USDC', 18]);
+    const gasTokenMetadata = ethers.utils.defaultAbiCoder.encode(['string', 'string', 'uint8'], ['Ether', 'ETH', 18]);
     const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [

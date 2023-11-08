@@ -102,7 +102,7 @@ async function main() {
         initializeEmptyDataProxy,
     )).data;
 
-    const gasTokenMetadata = ethers.utils.defaultAbiCoder.encode(['string', 'string', 'uint8'], ['ETH', 'ETH', 18]);
+    const gasTokenMetadata = ethers.utils.defaultAbiCoder.encode(['string', 'string', 'uint8'], ['USDC', 'USDC', 18]);
     const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
@@ -307,7 +307,7 @@ async function main() {
 
     genesis.push({
         accountName: 'claimTxManager',
-        balance: '10000000000000000000',
+        balance: '100000000000000000',
         nonce: '0',
         address: '0xC43B07fFe64110816ea9D2365c4c569D5aB74ba5',
     });
