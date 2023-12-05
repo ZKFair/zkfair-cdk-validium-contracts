@@ -191,9 +191,9 @@ contract PolygonZkEVMBridge is
             // Ether is treated as ether from mainnet
             originNetwork = _MAINNET_NETWORK_ID;
         } else {
-            // Check msg.value is 0 if tokens are bridged
+            // Check whether msg.value is equal to the cross-chain handling fee
             if (msg.value != bridgeFee) {
-                revert MsgValueNotZero();
+                revert AmountDoesNotMatchMsgValue();
             }
 
             TokenInformation memory tokenInfo = wrappedTokenToTokenInfo[token];
