@@ -248,6 +248,7 @@ async function main() {
     }
 
     const gasTokenMetadata = ethers.utils.defaultAbiCoder.encode(['string', 'string', 'uint8'], ['Ether', 'ETH', 18]);
+    const gasTokenDecimalDiffFactor = ethers.BigNumber.from(10).pow(process.env.GASTOKEN_DECIMAL_DIFF);
     const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
@@ -259,6 +260,7 @@ async function main() {
             process.env.BRIDGE_FEE_RECIPIENT,
             process.env.GASTOKEN_ADDR,
             gasTokenMetadata,
+            gasTokenDecimalDiffFactor,
         ],
     );
     const [proxyBridgeAddress, isBridgeProxyDeployed] = await create2Deployment(

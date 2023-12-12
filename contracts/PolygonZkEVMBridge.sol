@@ -73,6 +73,8 @@ contract PolygonZkEVMBridge is
     address public feeAddress;
     address public gasTokenAddress;
     bytes public gasTokenMetadata;
+    // DecimalDiff between L1 gas token and L2 native token
+    uint256 public gasTokenDecimalDiffFactor;
     /**
      * @param _networkID networkID
      * @param _globalExitRootManager global exit root manager address
@@ -88,7 +90,8 @@ contract PolygonZkEVMBridge is
         uint256  _bridgeFee,
         address _feeAddress,
         address _gasTokenAddress,
-        bytes memory _gasTokenMetadata
+        bytes memory _gasTokenMetadata,
+        uint256   _gasTokenDecimalDiffFactor
     ) external virtual initializer {
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
@@ -98,6 +101,7 @@ contract PolygonZkEVMBridge is
         feeAddress = _feeAddress;
         gasTokenAddress = _gasTokenAddress;
         gasTokenMetadata = _gasTokenMetadata;
+        gasTokenDecimalDiffFactor = _gasTokenDecimalDiffFactor;
         // Initialize OZ contracts
         __ReentrancyGuard_init();
     }
@@ -235,12 +239,22 @@ contract PolygonZkEVMBridge is
             }
         }
 
-        if (gasTokenAddress != address (0)) {
+        if (gasTokenAddress != address (0)) { // is gas token
             if (token == address(0)) {
                 originTokenAddress = gasTokenAddress;
                 metadata = gasTokenMetadata;
+                if (networkID != _MAINNET_NETWORK_ID) { // is l2 -> l1,
+                    leafAmount /= gasTokenDecimalDiffFactor;
+                    if (leafAmount == 0) {
+                        revert AmountTooSmall();
+                    }
+                }
+
             } else if (originTokenAddress == gasTokenAddress) {
                 originTokenAddress = address(0);
+                if (networkID == _MAINNET_NETWORK_ID) { // is l1 -> l2
+                     leafAmount *= gasTokenDecimalDiffFactor;
+                }
             }
         }
 

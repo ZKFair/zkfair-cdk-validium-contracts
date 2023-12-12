@@ -68,6 +68,11 @@ interface IPolygonZkEVMBridge {
      */
     error NotValidSignature();
 
+    /**
+     * @dev Thrown when the amount is too small to be bridged
+     */
+    error AmountTooSmall();
+
     function bridgeAsset(
         uint32 destinationNetwork,
         address destinationAddress,
