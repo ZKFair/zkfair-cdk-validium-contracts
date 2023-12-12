@@ -68,6 +68,8 @@ interface IPolygonZkEVMBridge {
      */
     error NotValidSignature();
 
+    error OnlyAdmin();
+
     function bridgeAsset(
         uint32 destinationNetwork,
         address destinationAddress,

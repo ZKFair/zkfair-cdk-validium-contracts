@@ -89,7 +89,9 @@ contract PolygonZkEVMBridge is
         address _feeAddress,
         address _gasTokenAddress,
         bytes memory _gasTokenMetadata
-    ) external virtual initializer {
+    ) external onlyValidAddress(_polygonZkEVMaddress)
+        onlyValidAddress(_admin)
+        onlyValidAddress(_feeAddress) virtual initializer {
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonZkEVMaddress = _polygonZkEVMaddress;
@@ -109,12 +111,15 @@ contract PolygonZkEVMBridge is
         _;
     }
 
-    error OnlyAdmin();
-
     modifier onlyAdmin() {
         if (admin != msg.sender) {
             revert OnlyAdmin();
         }
+        _;
+    }
+
+    modifier onlyValidAddress(address addr) {
+        require(addr != address(0), "Illegal address");
         _;
     }
 
