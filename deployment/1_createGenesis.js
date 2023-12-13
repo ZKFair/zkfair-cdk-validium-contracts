@@ -102,7 +102,8 @@ async function main() {
         initializeEmptyDataProxy,
     )).data;
 
-    const gasTokenMetadata = ethers.utils.defaultAbiCoder.encode(['string', 'string', 'uint8'], ['USDC', 'USDC', 18]);
+    const gasTokenMetadata = ethers.utils.defaultAbiCoder.encode(['string', 'string', 'uint8'], ['USD Coin', 'USDC', 18]);
+    const gasTokenDecimalDiffFactor = ethers.BigNumber.from(10).pow(process.env.GASTOKEN_DECIMAL_DIFF);
     const dataCallProxy = PolygonZkEVMBridgeFactory.interface.encodeFunctionData(
         'initialize',
         [
@@ -110,10 +111,11 @@ async function main() {
             globalExitRootL2Address,
             cdkValidiumAddressL2,
             process.env.BRIDGE_ADMIN_ADDR,
-            ethers.utils.parseEther(process.env.BRIDGE_FEE_ETHER),
+            ethers.utils.parseEther(process.env.BRIDGE_FEE_ETHER_L2),
             process.env.BRIDGE_FEE_RECIPIENT,
             process.env.GASTOKEN_ADDR,
             gasTokenMetadata,
+            gasTokenDecimalDiffFactor,
         ],
     );
     const [proxyBridgeAddress] = await create2Deployment(
@@ -210,7 +212,7 @@ async function main() {
 
     genesis.push({
         contractName: 'PolygonZkEVMBridge proxy',
-        balance: '200000000000000000000000000',
+        balance: '10000000000000000000000000000',
         nonce: bridgeProxyInfo.nonce.toString(),
         address: proxyBridgeAddress,
         bytecode: bridgeProxyInfo.bytecode,
@@ -307,7 +309,7 @@ async function main() {
 
     genesis.push({
         accountName: 'claimTxManager',
-        balance: '100000000000000000',
+        balance: '1000000000000000000',
         nonce: '0',
         address: '0xC43B07fFe64110816ea9D2365c4c569D5aB74ba5',
     });
