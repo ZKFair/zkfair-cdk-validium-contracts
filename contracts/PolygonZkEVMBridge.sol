@@ -95,6 +95,7 @@ contract PolygonZkEVMBridge is
     ) external onlyValidAddress(_polygonZkEVMaddress)
         onlyValidAddress(_admin)
         onlyValidAddress(_feeAddress) virtual initializer {
+        require(_gasTokenDecimalDiffFactor > 0, "IDF");
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonZkEVMaddress = _polygonZkEVMaddress;
