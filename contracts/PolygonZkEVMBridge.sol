@@ -92,7 +92,9 @@ contract PolygonZkEVMBridge is
         address _gasTokenAddress,
         bytes memory _gasTokenMetadata,
         uint256   _gasTokenDecimalDiffFactor
-    ) external virtual initializer {
+    ) external onlyValidAddress(_polygonZkEVMaddress)
+        onlyValidAddress(_admin)
+        onlyValidAddress(_feeAddress) virtual initializer {
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonZkEVMaddress = _polygonZkEVMaddress;
@@ -113,12 +115,15 @@ contract PolygonZkEVMBridge is
         _;
     }
 
-    error OnlyAdmin();
-
     modifier onlyAdmin() {
         if (admin != msg.sender) {
             revert OnlyAdmin();
         }
+        _;
+    }
+
+    modifier onlyValidAddress(address addr) {
+        require(addr != address(0), "Illegal address");
         _;
     }
 
@@ -295,55 +300,6 @@ contract PolygonZkEVMBridge is
     }
 
     /**
-     * @notice Bridge message and send ETH value
-     * @param destinationNetwork Network destination
-     * @param destinationAddress Address destination
-     * @param forceUpdateGlobalExitRoot Indicates if the new global exit root is updated or not
-     * @param metadata Message metadata
-     */
-    function bridgeMessage(
-        uint32 destinationNetwork,
-        address destinationAddress,
-        bool forceUpdateGlobalExitRoot,
-        bytes calldata metadata
-    ) external payable ifNotEmergencyState {
-        if (
-            destinationNetwork == networkID ||
-            destinationNetwork >= _CURRENT_SUPPORTED_NETWORKS
-        ) {
-            revert DestinationNetworkInvalid();
-        }
-
-        emit BridgeEvent(
-            _LEAF_TYPE_MESSAGE,
-            networkID,
-            msg.sender,
-            destinationNetwork,
-            destinationAddress,
-            msg.value,
-            metadata,
-            uint32(depositCount)
-        );
-
-        _deposit(
-            getLeafValue(
-                _LEAF_TYPE_MESSAGE,
-                networkID,
-                msg.sender,
-                destinationNetwork,
-                destinationAddress,
-                msg.value,
-                keccak256(metadata)
-            )
-        );
-
-        // Update the new root to the global exit root manager if set by the user
-        if (forceUpdateGlobalExitRoot) {
-            _updateGlobalExitRoot();
-        }
-    }
-
-    /**
      * @notice Verify merkle proof and withdraw tokens/ether
      * @param smtProof Smt proof
      * @param index Index of the leaf
@@ -451,71 +407,6 @@ contract PolygonZkEVMBridge is
             index,
             originNetwork,
             originTokenAddress,
-            destinationAddress,
-            amount
-        );
-    }
-
-    /**
-     * @notice Verify merkle proof and execute message
-     * If the receiving address is an EOA, the call will result as a success
-     * Which means that the amount of ether will be transferred correctly, but the message
-     * will not trigger any execution
-     * @param smtProof Smt proof
-     * @param index Index of the leaf
-     * @param mainnetExitRoot Mainnet exit root
-     * @param rollupExitRoot Rollup exit root
-     * @param originNetwork Origin network
-     * @param originAddress Origin address
-     * @param destinationNetwork Network destination
-     * @param destinationAddress Address destination
-     * @param amount message value
-     * @param metadata Abi encoded metadata if any, empty otherwise
-     */
-    function claimMessage(
-        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProof,
-        uint32 index,
-        bytes32 mainnetExitRoot,
-        bytes32 rollupExitRoot,
-        uint32 originNetwork,
-        address originAddress,
-        uint32 destinationNetwork,
-        address destinationAddress,
-        uint256 amount,
-        bytes calldata metadata
-    ) external ifNotEmergencyState {
-        // Verify leaf exist and it does not have been claimed
-        _verifyLeaf(
-            smtProof,
-            index,
-            mainnetExitRoot,
-            rollupExitRoot,
-            originNetwork,
-            originAddress,
-            destinationNetwork,
-            destinationAddress,
-            amount,
-            metadata,
-            _LEAF_TYPE_MESSAGE
-        );
-
-        // Execute message
-        // Transfer ether
-        /* solhint-disable avoid-low-level-calls */
-        (bool success, ) = destinationAddress.call{value: amount}(
-            abi.encodeCall(
-                IBridgeMessageReceiver.onMessageReceived,
-                (originAddress, originNetwork, metadata)
-            )
-        );
-        if (!success) {
-            revert MessageFailed();
-        }
-
-        emit ClaimEvent(
-            index,
-            originNetwork,
-            originAddress,
             destinationAddress,
             amount
         );
