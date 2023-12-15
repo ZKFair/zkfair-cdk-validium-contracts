@@ -92,8 +92,7 @@ contract PolygonZkEVMBridge is
         address _gasTokenAddress,
         bytes memory _gasTokenMetadata,
         uint256   _gasTokenDecimalDiffFactor
-    ) external onlyValidAddress(_polygonZkEVMaddress)
-        onlyValidAddress(_admin)
+    ) external onlyValidAddress(_admin)
         onlyValidAddress(_feeAddress) virtual initializer {
         require(_gasTokenDecimalDiffFactor > 0, "IDF");
         networkID = _networkID;
