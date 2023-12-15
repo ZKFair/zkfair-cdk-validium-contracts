@@ -311,7 +311,7 @@ async function main() {
         accountName: 'claimTxManager',
         balance: '1000000000000000000',
         nonce: '0',
-        address: '0xC43B07fFe64110816ea9D2365c4c569D5aB74ba5',
+        address: process.env.INIT_CLAIMER_ADDR,
     });
 
     if (argv.test) {
