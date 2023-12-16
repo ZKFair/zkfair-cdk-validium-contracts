@@ -110,7 +110,7 @@ async function main() {
             networkIDL2,
             globalExitRootL2Address,
             cdkValidiumAddressL2,
-            process.env.BRIDGE_ADMIN_ADDR,
+            process.env.BRIDGE_ADMIN_ADDR_L2,
             ethers.utils.parseEther(process.env.BRIDGE_FEE_ETHER_L2),
             process.env.BRIDGE_FEE_RECIPIENT,
             process.env.GASTOKEN_ADDR,
@@ -309,7 +309,7 @@ async function main() {
 
     genesis.push({
         accountName: 'claimTxManager',
-        balance: '1000000000000000000',
+        balance: '10000000000000000000',
         nonce: '0',
         address: process.env.INIT_CLAIMER_ADDR,
     });
