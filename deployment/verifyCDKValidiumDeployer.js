@@ -4,7 +4,7 @@ const path = require('path');
 const hre = require('hardhat');
 const { expect } = require('chai');
 
-const pathDeployParameters = path.join(__dirname, './deploy_parameters.json');
+const pathDeployParameters = path.join(__dirname, './deploy_parameters_l1.json');
 const deployParameters = require(pathDeployParameters);
 
 async function main() {

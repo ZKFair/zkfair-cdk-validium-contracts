@@ -13,7 +13,7 @@ docs/interfaces
 docs/mocks
 .vscode/launch.json
 deploy_output.json
-deploy_parameters.json
+deploy_parameters*.json
 deployments
 upgrade_parameters.json
 docker/gethData/

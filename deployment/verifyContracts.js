@@ -6,7 +6,7 @@ const { expect } = require('chai');
 const { ethers } = require('hardhat');
 
 const pathDeployOutputParameters = path.join(__dirname, './deploy_output.json');
-const pathDeployParameters = path.join(__dirname, './deploy_parameters.json');
+const pathDeployParameters = path.join(__dirname, './deploy_parameters_l1.json');
 const deployOutputParameters = require(pathDeployOutputParameters);
 const deployParameters = require(pathDeployParameters);
 
