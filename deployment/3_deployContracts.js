@@ -11,7 +11,7 @@ const { create2Deployment } = require('./helpers/deployment-helpers');
 const pathOutputJson = path.join(__dirname, './deploy_output.json');
 const pathOngoingDeploymentJson = path.join(__dirname, './deploy_ongoing.json');
 
-const deployParameters = require('./deploy_parameters.json');
+const deployParameters = require('./deploy_parameters_l1.json');
 const genesis = require('./genesis.json');
 
 const pathOZUpgradability = path.join(__dirname, `../.openzeppelin/${process.env.HARDHAT_NETWORK}.json`);
