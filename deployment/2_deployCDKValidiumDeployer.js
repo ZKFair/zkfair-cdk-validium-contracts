@@ -7,7 +7,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const { deployCDKValidiumDeployer } = require('./helpers/deployment-helpers');
 
-const pathDeployParameters = path.join(__dirname, './deploy_parameters.json');
+const pathDeployParameters = path.join(__dirname, './deploy_parameters_l1.json');
 const deployParameters = require('./deploy_parameters_l1.json');
 
 async function main() {
